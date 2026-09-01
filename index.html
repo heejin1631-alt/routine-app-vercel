@@ -6,205 +6,39 @@
 <title>오늘의 루틴</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <script>
-  const SUPABASE_URL = 'https://mtwbkyphkmaxafqbigpc.supabase.co';
-  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_AUCv5Ggnlr0bErHC0uLtDg_6G2Utj3D';
-
-  const supabaseClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_PUBLISHABLE_KEY
-  );
-</script>
-
 <style>
 *{box-sizing:border-box}
-
-body{
-  margin:0;
-  background:#f7f7f5;
-  color:#202020;
-  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif
-}
-
+body{margin:0;background:#f7f7f5;color:#202020;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 button,input,select{font:inherit}
-
-.app{
-  max-width:760px;
-  margin:auto;
-  padding:28px 18px 90px
-}
-
-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:24px
-}
-
-h1{
-  font-size:28px;
-  margin:0 0 6px
-}
-
+.app{max-width:760px;margin:auto;padding:28px 18px 90px}
+header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+h1{font-size:28px;margin:0 0 6px}
 .date{color:#777}
-
-.score{
-  font-size:28px;
-  font-weight:750
-}
-
-.card{
-  background:white;
-  border:1px solid #e8e8e4;
-  border-radius:18px;
-  padding:18px;
-  margin:12px 0;
-  box-shadow:0 3px 14px #00000008
-}
-
+.score{font-size:28px;font-weight:750}
+.card{background:white;border:1px solid #e8e8e4;border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 3px 14px #00000008}
 .timeline{position:relative}
-
-.item{
-  display:grid;
-  grid-template-columns:62px 1fr;
-  gap:12px;
-  padding:12px 0;
-  border-bottom:1px solid #eee
-}
-
+.item{display:grid;grid-template-columns:62px 1fr;gap:12px;padding:12px 0;border-bottom:1px solid #eee}
 .item:last-child{border-bottom:0}
-
-.time{
-  color:#777;
-  font-size:14px;
-  padding-top:4px
-}
-
+.time{color:#777;font-size:14px;padding-top:4px}
 .item-title{font-weight:650}
-
-.meta{
-  font-size:13px;
-  color:#888;
-  margin-top:5px
-}
-
-.badge{
-  display:inline-block;
-  margin-top:7px;
-  padding:5px 8px;
-  border-radius:999px;
-  background:#f2f2ef;
-  font-size:12px
-}
-
-.actions{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:10px
-}
-
-.btn{
-  border:0;
-  border-radius:10px;
-  padding:9px 12px;
-  cursor:pointer;
-  background:#ecece8
-}
-
-.primary{
-  background:#202020;
-  color:white
-}
-
-.fab{
-  position:fixed;
-  right:24px;
-  bottom:24px;
-  width:56px;
-  height:56px;
-  border-radius:50%;
-  border:0;
-  background:#202020;
-  color:#fff;
-  font-size:25px;
-  box-shadow:0 8px 25px #0003;
-  cursor:pointer
-}
-
-.modal{
-  position:fixed;
-  inset:0;
-  background:#0007;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  padding:18px
-}
-
+.meta{font-size:13px;color:#888;margin-top:5px}
+.badge{display:inline-block;margin-top:7px;padding:5px 8px;border-radius:999px;background:#f2f2ef;font-size:12px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{border:0;border-radius:10px;padding:9px 12px;cursor:pointer;background:#ecece8}
+.primary{background:#202020;color:white}
+.fab{position:fixed;right:24px;bottom:24px;width:56px;height:56px;border-radius:50%;border:0;background:#202020;color:#fff;font-size:25px;box-shadow:0 8px 25px #0003;cursor:pointer}
+.modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;padding:18px}
 .modal.open{display:flex}
-
-.modalbox{
-  background:white;
-  border-radius:20px;
-  padding:22px;
-  width:min(460px,100%)
-}
-
-label{
-  display:block;
-  font-size:13px;
-  color:#666;
-  margin:12px 0 5px
-}
-
-input,select{
-  width:100%;
-  padding:11px;
-  border:1px solid #ddd;
-  border-radius:10px
-}
-
-.tabs{
-  display:flex;
-  gap:8px;
-  margin-bottom:18px
-}
-
-.tab{
-  border:0;
-  background:transparent;
-  padding:8px 12px;
-  border-radius:10px;
-  cursor:pointer
-}
-
-.tab.active{
-  background:#202020;
-  color:#fff
-}
-
-.empty{
-  color:#888;
-  text-align:center;
-  padding:28px
-}
-
-.error{
-  color:#b42318;
-  font-size:13px;
-  margin-top:10px
-}
-
-.auth{
-  max-width:420px;
-  margin:12vh auto;
-  padding:22px
-}
-
-.hidden{
-  display:none!important
-}
+.modalbox{background:white;border-radius:20px;padding:22px;width:min(460px,100%)}
+label{display:block;font-size:13px;color:#666;margin:12px 0 5px}
+input,select{width:100%;padding:11px;border:1px solid #ddd;border-radius:10px}
+.tabs{display:flex;gap:8px;margin-bottom:18px}
+.tab{border:0;background:transparent;padding:8px 12px;border-radius:10px;cursor:pointer}
+.tab.active{background:#202020;color:#fff}
+.empty{color:#888;text-align:center;padding:28px}
+.error{color:#b42318;font-size:13px;margin-top:10px}
+.auth{max-width:420px;margin:12vh auto;padding:22px}
+.hidden{display:none!important}
 </style>
 </head>
 
@@ -213,164 +47,86 @@ input,select{
 <div id="auth" class="auth card">
   <h1>오늘의 루틴</h1>
   <p class="date">루틴과 일정을 한 화면에서 관리해요.</p>
-
   <label>이메일</label>
   <input id="email" type="email" placeholder="you@example.com">
-
   <label>비밀번호</label>
   <input id="password" type="password" placeholder="6자 이상">
-
   <div class="actions">
     <button class="btn primary" onclick="signIn()">로그인</button>
     <button class="btn" onclick="signUp()">회원가입</button>
   </div>
-
   <div id="authMsg" class="error"></div>
 </div>
 
-
 <main id="app" class="app hidden">
-
-<header>
-  <div>
-    <h1>오늘의 루틴</h1>
-    <div id="today" class="date"></div>
+  <header>
+    <div>
+      <h1>오늘의 루틴</h1>
+      <div id="today" class="date"></div>
+    </div>
+    <button class="btn" onclick="signOut()">로그아웃</button>
+  </header>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('todayTab',this)">오늘</button>
+    <button class="tab" onclick="showTab('statsTab',this)">통계</button>
   </div>
-
-  <button class="btn" onclick="signOut()">로그아웃</button>
-</header>
-
-<div class="tabs">
-  <button class="tab active"
-    onclick="showTab('todayTab',this)">오늘</button>
-
-  <button class="tab"
-    onclick="showTab('statsTab',this)">통계</button>
-</div>
-
-
-<section id="todayTab">
-
-  <div class="card">
-    <div class="date">오늘의 루틴 달성률</div>
-    <div id="score" class="score">0%</div>
-  </div>
-
-  <div id="timeline" class="card timeline"></div>
-
-</section>
-
-
-<section id="statsTab" class="hidden">
-
-  <div class="card">
-    <h3>최근 7일</h3>
-    <div id="stats"></div>
-  </div>
-
-</section>
-
+  <section id="todayTab">
+    <div class="card">
+      <div class="date">오늘의 루틴 달성률</div>
+      <div id="score" class="score">0%</div>
+    </div>
+    <div id="timeline" class="card timeline"></div>
+  </section>
+  <section id="statsTab" class="hidden">
+    <div class="card">
+      <h3>최근 7일</h3>
+      <div id="stats"></div>
+    </div>
+  </section>
 </main>
 
-
-<button id="fab"
-  class="fab hidden"
-  onclick="openModal()">+</button>
-
+<button id="fab" class="fab hidden" onclick="openModal()">+</button>
 
 <div id="modal" class="modal">
-
   <div class="modalbox">
-
     <h2 id="modalTitle">추가</h2>
-
     <label>종류</label>
-
     <select id="kind" onchange="toggleFields()">
       <option value="routine">루틴</option>
       <option value="schedule">일정</option>
     </select>
-
-
     <label>이름</label>
-
-    <input
-      id="name"
-      placeholder="예: 운동 / 친구와 저녁">
-
-
+    <input id="name" placeholder="예: 운동 / 친구와 저녁">
     <div id="routineFields">
-
       <label>시간</label>
-
-      <input
-        id="rtime"
-        type="time"
-        value="18:30">
-
-
+      <input id="rtime" type="time" value="18:30">
       <label>반복</label>
-
       <select id="repeat">
         <option value="daily">매일</option>
         <option value="weekdays">평일</option>
         <option value="weekends">주말</option>
       </select>
-
     </div>
-
-
     <div id="scheduleFields" class="hidden">
-
       <label>날짜</label>
-
       <input id="sdate" type="date">
-
-
       <label>시작</label>
-
-      <input
-        id="stime"
-        type="time"
-        value="18:00">
-
-
+      <input id="stime" type="time" value="18:00">
       <label>종료</label>
-
-      <input
-        id="etime"
-        type="time"
-        value="20:00">
-
+      <input id="etime" type="time" value="20:00">
     </div>
-
-
     <div class="actions">
-
-      <button
-        class="btn"
-        onclick="closeModal()">취소</button>
-
-      <button
-        class="btn primary"
-        onclick="saveItem()">저장</button>
-
+      <button class="btn" onclick="closeModal()">취소</button>
+      <button class="btn primary" onclick="saveItem()">저장</button>
     </div>
-
     <div id="modalMsg" class="error"></div>
-
   </div>
-
 </div>
 
-
 <script>
-// 1. 클라이언트 설정 (중복 제거 및 통일)
 const SUPABASE_URL = "https://mtwbkypkhmaxafqbigpc.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AUCv5Ggnlr0bErHC0uLtDg_6G2Utj3D";
-
-// window.supabase가 있는지 확인하여 안전하게 생성
-const sb = window.supabase ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let user = null;
 let routines = [];
@@ -430,7 +186,7 @@ function enter(u){
 
 function leave(){
   user = null;
-  auth.classList.add('hidden');
+  auth.classList.remove('hidden');
   app.classList.add('hidden');
   fab.classList.add('hidden');
 }
@@ -438,16 +194,13 @@ function leave(){
 async function loadToday(){
   const day = isoToday();
   const dow = new Date().getDay();
-
   const r = await sb.from('routines').select('*').eq('user_id',user.id).eq('active',true).order('scheduled_time');
   const s = await sb.from('schedules').select('*').eq('user_id',user.id).eq('schedule_date',day).order('start_time');
   const rec = await sb.from('routine_records').select('*').eq('user_id',user.id).eq('scheduled_date',day);
-
   if(r.error || s.error || rec.error){
     timeline.innerHTML = '<div class="error">데이터를 불러오지 못했어요.</div>';
     return;
   }
-
   routines = r.data || [];
   schedules = s.data || [];
   records = rec.data || [];
@@ -469,11 +222,9 @@ function render(day,dow){
     let rec = records.find(x => x.routine_id === r.id);
     items.push({ time: rec?.actual_scheduled_time || r.scheduled_time, type:'routine', r, rec });
   });
-
   schedules.forEach(s => {
     items.push({ time:s.start_time, type:'schedule', s });
   });
-
   items.sort((a,b) => a.time.localeCompare(b.time));
 
   const conflicts = [];
@@ -502,7 +253,6 @@ function render(day,dow){
   ` : '';
 
   timeline.innerHTML = conflictHtml + (items.length ? items.map(renderItem).join('') : `<div class="empty">아직 오늘의 루틴이나 일정이 없어요.<br>아래 + 버튼으로 추가해보세요.</div>`);
-
   const active = routines.filter(r => applies(r,dow));
   const done = active.filter(r => records.find(x => x.routine_id === r.id)?.status === 'completed').length;
   score.textContent = (active.length ? Math.round(done / active.length * 100) : 0) + '%';
@@ -529,7 +279,6 @@ function renderItem(x){
   </div></div>`;
 }
 
-// [디버깅 포함] ensureRecord
 async function ensureRecord(r) {
     const today = isoToday();
     console.log(`[DEBUG] ensureRecord start: routine_id=${r.id}, date=${today}`);
@@ -564,7 +313,6 @@ async function rescheduleAfter(id, endTime){
   if(!error) loadToday();
 }
 
-// [디버깅 포함] completeRoutine
 async function completeRoutine(id){
   console.log(`[DEBUG] completeRoutine start: id=${id}`);
   let r = routines.find(x => x.id === id);
@@ -577,7 +325,6 @@ async function completeRoutine(id){
   else { console.log("[DEBUG] completeRoutine success"); loadToday(); }
 }
 
-// [디버깅 포함] skipToday
 async function skipToday(id){
   console.log(`[DEBUG] skipToday start: id=${id}`);
   let r = routines.find(x => x.id === id);
@@ -623,6 +370,5 @@ async function loadStats(){
 
 init();
 </script>
-
 </body>
 </html>
