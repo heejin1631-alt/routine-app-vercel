@@ -940,45 +940,51 @@ function renderItem(x){
 }
 
 
-async function ensureRecord(r){
+async function ensureRecord(r) {
+    const today = isoToday();
 
-  let rec =
-    records.find(
-      x => x.routine_id === r.id
-    );
+    console.log(`[DEBUG] ensureRecord start: routine_id=${r.id}, date=${today}`);
 
-  if(rec)
-    return rec;
+    let { data: existing, error: selectError } = await sb
+        .from('routine_records')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('routine_id', r.id)
+        .eq('scheduled_date', today)
+        .single();
 
+    if (existing) {
+        console.log("[DEBUG] Existing record found:", existing);
+        return existing;
+    }
 
-  const {
-    data,
-    error
-  } =
-    await sb
-      .from('routine_records')
-      .insert({
-        user_id:user.id,
-        routine_id:r.id,
-        scheduled_date:isoToday(),
-        original_scheduled_time:r.scheduled_time,
-        status:'scheduled'
-      })
-      .select()
-      .single();
+    const payload = {
+        user_id: user.id,
+        routine_id: r.id,
+        scheduled_date: today,
+        original_scheduled_time: r.scheduled_time,
+        status: 'scheduled'
+    };
 
+    console.log("[DEBUG] ensureRecord insert payload:", payload);
 
-  if(!error){
+    const { data, error } = await sb
+        .from('routine_records')
+        .insert(payload)
+        .select()
+        .single();
 
-    records.push(data);
+    if (error) {
+        console.error("[DEBUG] ensureRecord INSERT ERROR:");
+        console.error("- Message:", error.message);
+        console.error("- Details:", error.details);
+        console.error("- Hint:", error.hint);
+        return null;
+    }
 
-    return data;
-
-  }
-
-
-  return null;
-
+console.log("[DEBUG] ensureRecord success:", data);
+records.push(data);
+return data;
 }
 
 
