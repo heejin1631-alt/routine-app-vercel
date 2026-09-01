@@ -365,954 +365,263 @@ input,select{
 
 
 <script>
+// 1. 클라이언트 설정 (중복 제거 및 통일)
+const SUPABASE_URL = "https://mtwbkypkhmaxafqbigpc.supabase.co";
+const SUPABASE_KEY = "sb_publishable_AUCv5Ggnlr0bErHC0uLtDg_6G2Utj3D";
 
-const SUPABASE_URL =
-"https://mtwbkypkhmaxafqbigpc.supabase.co";
-
-const SUPABASE_KEY =
-"sb_publishable_AUCv5Ggnlr0bErHC0uLtDg_6G2Utj3D";
-
-const sb =
-supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
-
+// window.supabase가 있는지 확인하여 안전하게 생성
+const sb = window.supabase ? supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let user = null;
 let routines = [];
 let schedules = [];
 let records = [];
 
-
-const isoToday = () =>
-  new Date().toISOString().slice(0,10);
-
+const isoToday = () => new Date().toISOString().slice(0,10);
 
 function fmtDate(d){
-
-  return new Intl.DateTimeFormat(
-    'ko-KR',
-    {
-      year:'numeric',
-      month:'long',
-      day:'numeric',
-      weekday:'long'
-    }
-  ).format(d);
-
+  return new Intl.DateTimeFormat('ko-KR', {
+    year:'numeric', month:'long', day:'numeric', weekday:'long'
+  }).format(d);
 }
-
 
 function esc(s){
-
-  return (s||'').replace(
-    /[&<>"']/g,
-    m => ({
-      '&':'&amp;',
-      '<':'&lt;',
-      '>':'&gt;',
-      '"':'&quot;',
-      "'":'&#039;'
-    }[m])
-  );
-
+  return (s||'').replace(/[&<>"']/g, m => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;'
+  }[m]));
 }
-
 
 function showTab(id,el){
-
-  document
-    .querySelectorAll('.tabs .tab')
-    .forEach(x =>
-      x.classList.remove('active')
-    );
-
+  document.querySelectorAll('.tabs .tab').forEach(x => x.classList.remove('active'));
   el.classList.add('active');
-
-  document
-    .querySelectorAll('#todayTab,#statsTab')
-    .forEach(x =>
-      x.classList.add('hidden')
-    );
-
-  document
-    .getElementById(id)
-    .classList.remove('hidden');
-
-  if(id==='statsTab')
-    loadStats();
-
+  document.querySelectorAll('#todayTab,#statsTab').forEach(x => x.classList.add('hidden'));
+  document.getElementById(id).classList.remove('hidden');
+  if(id==='statsTab') loadStats();
 }
-
 
 async function init(){
-
-  const {
-    data:{session}
-  } = await sb.auth.getSession();
-
-  if(session)
-    enter(session.user);
-
-  sb.auth.onAuthStateChange(
-    (_e,s) =>
-      s
-      ? enter(s.user)
-      : leave()
-  );
-
+  const { data:{session} } = await sb.auth.getSession();
+  if(session) enter(session.user);
+  sb.auth.onAuthStateChange((_e,s) => s ? enter(s.user) : leave());
 }
-
 
 async function signUp(){
-
-  const {error} =
-    await sb.auth.signUp({
-      email:email.value,
-      password:password.value
-    });
-
-  authMsg.textContent =
-    error
-    ? error.message
-    : "가입 완료. 이메일 인증이 필요할 수 있어요.";
-
+  const {error} = await sb.auth.signUp({ email:email.value, password:password.value });
+  authMsg.textContent = error ? error.message : "가입 완료. 이메일 인증이 필요할 수 있어요.";
 }
-
 
 async function signIn(){
-
-  const {error} =
-    await sb.auth.signInWithPassword({
-      email:email.value,
-      password:password.value
-    });
-
-  authMsg.textContent =
-    error
-    ? error.message
-    : "";
-
+  const {error} = await sb.auth.signInWithPassword({ email:email.value, password:password.value });
+  authMsg.textContent = error ? error.message : "";
 }
-
 
 async function signOut(){
-
   await sb.auth.signOut();
-
 }
-
 
 function enter(u){
-
   user = u;
-
   auth.classList.add('hidden');
-
   app.classList.remove('hidden');
-
   fab.classList.remove('hidden');
-
-  today.textContent =
-    fmtDate(new Date());
-
+  today.textContent = fmtDate(new Date());
   loadToday();
-
 }
-
 
 function leave(){
-
   user = null;
-
-  auth.classList.remove('hidden');
-
+  auth.classList.add('hidden');
   app.classList.add('hidden');
-
   fab.classList.add('hidden');
-
 }
-
 
 async function loadToday(){
-
   const day = isoToday();
-
   const dow = new Date().getDay();
 
+  const r = await sb.from('routines').select('*').eq('user_id',user.id).eq('active',true).order('scheduled_time');
+  const s = await sb.from('schedules').select('*').eq('user_id',user.id).eq('schedule_date',day).order('start_time');
+  const rec = await sb.from('routine_records').select('*').eq('user_id',user.id).eq('scheduled_date',day);
 
-  const r =
-    await sb
-      .from('routines')
-      .select('*')
-      .eq('user_id',user.id)
-      .eq('active',true)
-      .order('scheduled_time');
-
-
-  const s =
-    await sb
-      .from('schedules')
-      .select('*')
-      .eq('user_id',user.id)
-      .eq('schedule_date',day)
-      .order('start_time');
-
-
-  const rec =
-    await sb
-      .from('routine_records')
-      .select('*')
-      .eq('user_id',user.id)
-      .eq('scheduled_date',day);
-
-
-  if(
-    r.error ||
-    s.error ||
-    rec.error
-  ){
-
-    timeline.innerHTML =
-      '<div class="error">데이터를 불러오지 못했어요.</div>';
-
+  if(r.error || s.error || rec.error){
+    timeline.innerHTML = '<div class="error">데이터를 불러오지 못했어요.</div>';
     return;
-
   }
-
 
   routines = r.data || [];
-
   schedules = s.data || [];
-
   records = rec.data || [];
-
   render(day,dow);
-
 }
-
 
 function applies(r,dow){
-
   return (
     r.repeat_type === 'daily' ||
-
-    (
-      r.repeat_type === 'weekdays' &&
-      dow >= 1 &&
-      dow <= 5
-    ) ||
-
-    (
-      r.repeat_type === 'weekends' &&
-      (dow === 0 || dow === 6)
-    ) ||
-
-    (
-      r.repeat_type === 'custom' &&
-      (r.repeat_days || []).includes(dow)
-    )
+    (r.repeat_type === 'weekdays' && dow >= 1 && dow <= 5) ||
+    (r.repeat_type === 'weekends' && (dow === 0 || dow === 6)) ||
+    (r.repeat_type === 'custom' && (r.repeat_days || []).includes(dow))
   );
-
 }
-
 
 function render(day,dow){
-
   let items = [];
-
-
-  routines
-    .filter(r => applies(r,dow))
-    .forEach(r => {
-
-      let rec =
-        records.find(
-          x => x.routine_id === r.id
-        );
-
-      items.push({
-        time:
-          rec?.actual_scheduled_time ||
-          r.scheduled_time,
-
-        type:'routine',
-
-        r,
-
-        rec
-      });
-
-    });
-
-
-  schedules.forEach(s => {
-
-    items.push({
-      time:s.start_time,
-      type:'schedule',
-      s
-    });
-
+  routines.filter(r => applies(r,dow)).forEach(r => {
+    let rec = records.find(x => x.routine_id === r.id);
+    items.push({ time: rec?.actual_scheduled_time || r.scheduled_time, type:'routine', r, rec });
   });
 
+  schedules.forEach(s => {
+    items.push({ time:s.start_time, type:'schedule', s });
+  });
 
-  items.sort(
-    (a,b) =>
-      a.time.localeCompare(b.time)
-  );
-
+  items.sort((a,b) => a.time.localeCompare(b.time));
 
   const conflicts = [];
-
-
-  routines
-    .filter(r => applies(r,dow))
-    .forEach(r => {
-
-      const rec =
-        records.find(
-          x => x.routine_id === r.id
-        );
-
-      const rt =
-        rec?.actual_scheduled_time ||
-        r.scheduled_time;
-
-
-      schedules.forEach(s => {
-
-        if(
-          rt >= s.start_time &&
-          rt < s.end_time
-        ){
-
-          conflicts.push({
-            r,
-            s,
-            rec
-          });
-
-        }
-
-      });
-
+  routines.filter(r => applies(r,dow)).forEach(r => {
+    const rec = records.find(x => x.routine_id === r.id);
+    const rt = rec?.actual_scheduled_time || r.scheduled_time;
+    schedules.forEach(s => {
+      if(rt >= s.start_time && rt < s.end_time) conflicts.push({ r, s, rec });
     });
+  });
 
-
-  const conflictHtml =
-    conflicts.length
-
-    ? `
-      <div
-        class="card"
-        style="
-          margin:0 0 12px;
-          border-color:#ddd2a8;
-          background:#fffdf3
-        "
-      >
-
-        <div
-          style="
-            font-weight:700;
-            margin-bottom:8px
-          "
-        >
-          ⚠️ 일정과 겹치는 루틴이 있어요
+  const conflictHtml = conflicts.length ? `
+    <div class="card" style="margin:0 0 12px; border-color:#ddd2a8; background:#fffdf3">
+      <div style="font-weight:700; margin-bottom:8px">⚠️ 일정과 겹치는 루틴이 있어요</div>
+      ${conflicts.map(c => `
+        <div style="padding:10px 0; border-top:1px solid #eee">
+          <b>${esc(c.r.name)}</b> · ${c.r.scheduled_time.slice(0,5)}
+          <div class="meta">📅 ${esc(c.s.title)} (${c.s.start_time.slice(0,5)} – ${c.s.end_time.slice(0,5)})</div>
+          <div class="actions">
+            <button class="btn primary" onclick="rescheduleAfter('${c.r.id}','${c.s.end_time}')">일정 이후로 옮기기</button>
+            <button class="btn" onclick="skipToday('${c.r.id}')">오늘만 쉬기</button>
+          </div>
         </div>
+      `).join('')}
+    </div>
+  ` : '';
 
-        ${
-          conflicts
-            .map(c => `
+  timeline.innerHTML = conflictHtml + (items.length ? items.map(renderItem).join('') : `<div class="empty">아직 오늘의 루틴이나 일정이 없어요.<br>아래 + 버튼으로 추가해보세요.</div>`);
 
-              <div
-                style="
-                  padding:10px 0;
-                  border-top:1px solid #eee
-                "
-              >
-
-                <b>
-                  ${esc(c.r.name)}
-                </b>
-
-                · ${c.r.scheduled_time.slice(0,5)}
-
-                <div class="meta">
-                  📅 ${esc(c.s.title)}
-                  (${c.s.start_time.slice(0,5)}
-                  –
-                  ${c.s.end_time.slice(0,5)})
-                </div>
-
-                <div class="actions">
-
-                  <button
-                    class="btn primary"
-                    onclick="
-                      rescheduleAfter(
-                        '${c.r.id}',
-                        '${c.s.end_time}'
-                      )
-                    "
-                  >
-                    일정 이후로 옮기기
-                  </button>
-
-                  <button
-                    class="btn"
-                    onclick="
-                      skipToday('${c.r.id}')
-                    "
-                  >
-                    오늘만 쉬기
-                  </button>
-
-                </div>
-
-              </div>
-
-            `)
-            .join('')
-        }
-
-      </div>
-    `
-
-    : '';
-
-
-  timeline.innerHTML =
-    conflictHtml +
-    (
-      items.length
-      ? items.map(renderItem).join('')
-      : `
-        <div class="empty">
-          아직 오늘의 루틴이나 일정이 없어요.
-          <br>
-          아래 + 버튼으로 추가해보세요.
-        </div>
-      `
-    );
-
-
-  const active =
-    routines.filter(
-      r => applies(r,dow)
-    );
-
-
-  const done =
-    active.filter(
-      r =>
-        records.find(
-          x =>
-            x.routine_id === r.id
-        )?.status === 'completed'
-    ).length;
-
-
-  score.textContent =
-    (
-      active.length
-      ? Math.round(
-          done / active.length * 100
-        )
-      : 0
-    ) + '%';
-
+  const active = routines.filter(r => applies(r,dow));
+  const done = active.filter(r => records.find(x => x.routine_id === r.id)?.status === 'completed').length;
+  score.textContent = (active.length ? Math.round(done / active.length * 100) : 0) + '%';
 }
-
 
 function renderItem(x){
-
   if(x.type === 'schedule'){
-
-    return `
-      <div class="item">
-
-        <div class="time">
-          ${x.time.slice(0,5)}
-        </div>
-
-        <div>
-
-          <div class="item-title">
-            📅 ${esc(x.s.title)}
-          </div>
-
-          <div class="meta">
-            ${x.s.start_time.slice(0,5)}
-            –
-            ${x.s.end_time.slice(0,5)}
-          </div>
-
-        </div>
-
-      </div>
-    `;
-
+    return `<div class="item"><div class="time">${x.time.slice(0,5)}</div><div><div class="item-title">📅 ${esc(x.s.title)}</div><div class="meta">${x.s.start_time.slice(0,5)} – ${x.s.end_time.slice(0,5)}</div></div></div>`;
   }
-
-
   const rec = x.rec;
-
-  const status =
-    rec?.status || 'scheduled';
-
-
+  const status = rec?.status || 'scheduled';
   let actions = '';
-
-
-  if(
-    status !== 'completed' &&
-    status !== 'skipped'
-  ){
-
-    actions = `
-      <div class="actions">
-
-        <button
-          class="btn primary"
-          onclick="
-            completeRoutine('${x.r.id}')
-          "
-        >
-          완료
-        </button>
-
-        <button
-          class="btn"
-          onclick="
-            skipToday('${x.r.id}')
-          "
-        >
-          오늘만 쉬기
-        </button>
-
-      </div>
-    `;
-
+  if(status !== 'completed' && status !== 'skipped'){
+    actions = `<div class="actions">
+      <button class="btn primary" onclick="completeRoutine('${x.r.id}')">완료</button>
+      <button class="btn" onclick="skipToday('${x.r.id}')">오늘만 쉬기</button>
+    </div>`;
   }
-
-
-  return `
-    <div class="item">
-
-      <div class="time">
-        ${(x.time || x.r.scheduled_time)
-          .slice(0,5)}
-      </div>
-
-      <div>
-
-        <div class="item-title">
-          ${esc(x.r.icon || '✓')}
-          ${esc(x.r.name)}
-        </div>
-
-        <div class="meta">
-          ${
-            status === 'completed'
-            ? '완료'
-            : status === 'skipped'
-            ? '오늘만 쉬기'
-            : '예정'
-          }
-        </div>
-
-        ${
-          status === 'skipped'
-          ? '<span class="badge">일정으로 쉬었어요</span>'
-          : ''
-        }
-
-        ${actions}
-
-      </div>
-
-    </div>
-  `;
-
+  return `<div class="item"><div class="time">${(x.time || x.r.scheduled_time).slice(0,5)}</div><div>
+    <div class="item-title">${esc(x.r.icon || '✓')} ${esc(x.r.name)}</div>
+    <div class="meta">${status === 'completed' ? '완료' : status === 'skipped' ? '오늘만 쉬기' : '예정'}</div>
+    ${status === 'skipped' ? '<span class="badge">일정으로 쉬었어요</span>' : ''}
+    ${actions}
+  </div></div>`;
 }
 
-
+// [디버깅 포함] ensureRecord
 async function ensureRecord(r) {
     const today = isoToday();
-
     console.log(`[DEBUG] ensureRecord start: routine_id=${r.id}, date=${today}`);
-
-    let { data: existing, error: selectError } = await sb
-        .from('routine_records')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('routine_id', r.id)
-        .eq('scheduled_date', today)
-        .single();
-
+    let { data: existing } = await sb.from('routine_records').select('*').eq('user_id', user.id).eq('routine_id', r.id).eq('scheduled_date', today).single();
     if (existing) {
         console.log("[DEBUG] Existing record found:", existing);
         return existing;
     }
-
-    const payload = {
-        user_id: user.id,
-        routine_id: r.id,
-        scheduled_date: today,
-        original_scheduled_time: r.scheduled_time,
-        status: 'scheduled'
-    };
-
+    const payload = { user_id: user.id, routine_id: r.id, scheduled_date: today, original_scheduled_time: r.scheduled_time, status: 'scheduled' };
     console.log("[DEBUG] ensureRecord insert payload:", payload);
-
-    const { data, error } = await sb
-        .from('routine_records')
-        .insert(payload)
-        .select()
-        .single();
-
+    const { data, error } = await sb.from('routine_records').insert(payload).select().single();
     if (error) {
-        console.error("[DEBUG] ensureRecord INSERT ERROR:");
-        console.error("- Message:", error.message);
-        console.error("- Details:", error.details);
-        console.error("- Hint:", error.hint);
+        console.error("[DEBUG] ensureRecord INSERT ERROR:", error.message, "Details:", error.details);
         return null;
     }
-
-console.log("[DEBUG] ensureRecord success:", data);
-records.push(data);
-return data;
+    console.log("[DEBUG] ensureRecord success:", data);
+    records.push(data);
+    return data;
 }
 
-
-async function rescheduleAfter(
-  id,
-  endTime
-){
-
-  const r =
-    routines.find(
-      x => x.id === id
-    );
-
-  if(!r)
-    return;
-
-
-  let rec =
-    await ensureRecord(r);
-
-  if(!rec)
-    return;
-
-
-  const [h,m] =
-    endTime
-      .split(':')
-      .map(Number);
-
-
-  const mins =
-    h * 60 +
-    m +
-    30;
-
-
-  const nh =
-    String(
-      Math.floor(
-        (mins % 1440) / 60
-      )
-    ).padStart(2,'0');
-
-
-  const nm =
-    String(
-      mins % 60
-    ).padStart(2,'0');
-
-
-  const newTime =
-    `${nh}:${nm}:00`;
-
-
-  const {error} =
-    await sb
-      .from('routine_records')
-      .update({
-        actual_scheduled_time:newTime,
-        status:'rescheduled',
-        adjusted:true,
-        adjustment_reason:'schedule_conflict'
-      })
-      .eq('id',rec.id);
-
-
-  if(!error)
-    loadToday();
-
+async function rescheduleAfter(id, endTime){
+  const r = routines.find(x => x.id === id);
+  if(!r) return;
+  let rec = await ensureRecord(r);
+  if(!rec) return;
+  const [h,m] = endTime.split(':').map(Number);
+  const mins = h * 60 + m + 30;
+  const nh = String(Math.floor((mins % 1440) / 60)).padStart(2,'0');
+  const nm = String(mins % 60).padStart(2,'0');
+  const newTime = `${nh}:${nm}:00`;
+  const {error} = await sb.from('routine_records').update({ actual_scheduled_time:newTime, status:'rescheduled', adjusted:true, adjustment_reason:'schedule_conflict' }).eq('id',rec.id);
+  if(!error) loadToday();
 }
 
-
+// [디버깅 포함] completeRoutine
 async function completeRoutine(id){
-
-  let r =
-    routines.find(
-      x => x.id === id
-    );
-
-  let rec =
-    await ensureRecord(r);
-
-  if(!rec)
-    return;
-
-
-  await sb
-    .from('routine_records')
-    .update({
-      completed:true,
-      completed_at:
-        new Date().toISOString(),
-      status:'completed'
-    })
-    .eq('id',rec.id);
-
-
-  loadToday();
-
+  console.log(`[DEBUG] completeRoutine start: id=${id}`);
+  let r = routines.find(x => x.id === id);
+  let rec = await ensureRecord(r);
+  if(!rec) return;
+  const updatePayload = { completed:true, completed_at: new Date().toISOString(), status:'completed' };
+  console.log("[DEBUG] completeRoutine update payload:", updatePayload, "ID:", rec.id);
+  const { error } = await sb.from('routine_records').update(updatePayload).eq('id',rec.id);
+  if(error) console.error("[DEBUG] completeRoutine UPDATE ERROR:", error.message, error.details);
+  else { console.log("[DEBUG] completeRoutine success"); loadToday(); }
 }
 
-
+// [디버깅 포함] skipToday
 async function skipToday(id){
-
-  let r =
-    routines.find(
-      x => x.id === id
-    );
-
-  let rec =
-    await ensureRecord(r);
-
-  if(!rec)
-    return;
-
-
-  await sb
-    .from('routine_records')
-    .update({
-      status:'skipped',
-      adjusted:true,
-      adjustment_reason:'user_skip_today'
-    })
-    .eq('id',rec.id);
-
-
-  loadToday();
-
+  console.log(`[DEBUG] skipToday start: id=${id}`);
+  let r = routines.find(x => x.id === id);
+  let rec = await ensureRecord(r);
+  if(!rec) return;
+  const updatePayload = { status:'skipped', adjusted:true, adjustment_reason:'user_skip_today' };
+  console.log("[DEBUG] skipToday update payload:", updatePayload, "ID:", rec.id);
+  const { error } = await sb.from('routine_records').update(updatePayload).eq('id',rec.id);
+  if(error) console.error("[DEBUG] skipToday UPDATE ERROR:", error.message, error.details);
+  else { console.log("[DEBUG] skipToday success"); loadToday(); }
 }
 
-
-function openModal(){
-
-  modal.classList.add('open');
-
-  sdate.value =
-    isoToday();
-
-  modalMsg.textContent = '';
-
-}
-
-
-function closeModal(){
-
-  modal.classList.remove('open');
-
-}
-
-
-function toggleFields(){
-
-  routineFields.classList.toggle(
-    'hidden',
-    kind.value !== 'routine'
-  );
-
-  scheduleFields.classList.toggle(
-    'hidden',
-    kind.value !== 'schedule'
-  );
-
-}
-
+function openModal(){ modal.classList.add('open'); sdate.value = isoToday(); modalMsg.textContent = ''; }
+function closeModal(){ modal.classList.remove('open'); }
+function toggleFields(){ routineFields.classList.toggle('hidden', kind.value !== 'routine'); scheduleFields.classList.toggle('hidden', kind.value !== 'schedule'); }
 
 async function saveItem(){
-
   modalMsg.textContent = '';
-
-
-  if(!name.value.trim()){
-
-    modalMsg.textContent =
-      '이름을 입력해주세요.';
-
-    return;
-
-  }
-
-
+  if(!name.value.trim()){ modalMsg.textContent = '이름을 입력해주세요.'; return; }
   if(kind.value === 'routine'){
-
-    const {error} =
-      await sb
-        .from('routines')
-        .insert({
-          user_id:user.id,
-          name:name.value.trim(),
-          scheduled_time:rtime.value,
-          repeat_type:repeat.value,
-          notification_enabled:true,
-          active:true
-        });
-
-
-    if(error){
-
-      modalMsg.textContent =
-        error.message;
-
-      return;
-
-    }
-
+    const {error} = await sb.from('routines').insert({ user_id:user.id, name:name.value.trim(), scheduled_time:rtime.value, repeat_type:repeat.value, notification_enabled:true, active:true });
+    if(error){ modalMsg.textContent = error.message; return; }
   }else{
-
-    const {error} =
-      await sb
-        .from('schedules')
-        .insert({
-          user_id:user.id,
-          title:name.value.trim(),
-          schedule_date:sdate.value,
-          start_time:stime.value,
-          end_time:etime.value
-        });
-
-
-    if(error){
-
-      modalMsg.textContent =
-        error.message;
-
-      return;
-
-    }
-
+    const {error} = await sb.from('schedules').insert({ user_id:user.id, title:name.value.trim(), schedule_date:sdate.value, start_time:stime.value, end_time:etime.value });
+    if(error){ modalMsg.textContent = error.message; return; }
   }
-
-
-  name.value = '';
-
-  closeModal();
-
-  loadToday();
-
+  name.value = ''; closeModal(); loadToday();
 }
-
 
 async function loadStats(){
-
-  const from =
-    new Date(
-      Date.now() -
-      6 * 86400000
-    )
-    .toISOString()
-    .slice(0,10);
-
-
-  const {
-    data,
-    error
-  } =
-    await sb
-      .from('routine_records')
-      .select(
-        'scheduled_date,status'
-      )
-      .eq('user_id',user.id)
-      .gte('scheduled_date',from)
-      .order('scheduled_date');
-
-
-  if(error){
-
-    stats.textContent =
-      '통계를 불러오지 못했어요.';
-
-    return;
-
-  }
-
-
+  const from = new Date(Date.now() - 6 * 86400000).toISOString().slice(0,10);
+  const { data, error } = await sb.from('routine_records').select('scheduled_date,status').eq('user_id',user.id).gte('scheduled_date',from).order('scheduled_date');
+  if(error){ stats.textContent = '통계를 불러오지 못했어요.'; return; }
   const map = {};
-
-
   (data || []).forEach(x => {
-
-    map[x.scheduled_date] ??= {
-      completed:0,
-      adjusted:0,
-      missed:0
-    };
-
-
-    if(x.status === 'completed')
-      map[x.scheduled_date].completed++;
-
-    else if(
-      x.status === 'skipped' ||
-      x.status === 'rescheduled'
-    )
-      map[x.scheduled_date].adjusted++;
-
-    else if(x.status === 'missed')
-      map[x.scheduled_date].missed++;
-
+    map[x.scheduled_date] ??= { completed:0, adjusted:0, missed:0 };
+    if(x.status === 'completed') map[x.scheduled_date].completed++;
+    else if(x.status === 'skipped' || x.status === 'rescheduled') map[x.scheduled_date].adjusted++;
+    else if(x.status === 'missed') map[x.scheduled_date].missed++;
   });
-
-
-  stats.innerHTML =
-    Object.keys(map).length
-
-    ? Object.entries(map)
-        .map(
-          ([d,v]) => `
-            <p>
-              <b>${d}</b>
-              · 완료 ${v.completed}
-              · 조정 ${v.adjusted}
-              · 미완료 ${v.missed}
-            </p>
-          `
-        )
-        .join('')
-
-    : `
-      <div class="empty">
-        아직 기록이 없어요.
-      </div>
-    `;
-
+  stats.innerHTML = Object.keys(map).length ? Object.entries(map).map(([d,v]) => `<p><b>${d}</b> · 완료 ${v.completed} · 조정 ${v.adjusted} · 미완료 ${v.missed}</p>`).join('') : `<div class="empty">아직 기록이 없어요.</div>`;
 }
 
-
 init();
-
 </script>
 
 </body>
